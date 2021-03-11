@@ -1,0 +1,29 @@
+# For an alternative (yet more complete) list, visit
+# https://github.com/github/gitignore/blob/master/Android.gitignore
+
+# Gradle files
+.gradle
+/build
+
+# IntelliJ
+*.iml
+/.idea/caches
+/.idea/libraries
+/.idea/modules.xml
+/.idea/workspace.xml
+/.idea/navEditor.xml
+/.idea/assetWizardSettings.xml
+
+# Mac/OSX system file holding attributes/meta-data about the folder it resides in.
+.DS_Store
+
+# Files generated when running the Layout Inspector or the Method Tracing in Android Studio.
+/captures
+
+# External native build folder generated in Android Studio 2.2 and later.
+.externalNativeBuild
+.cxx
+
+# Local configuration file (Local SDK path)
+/local.properties
+local.properties
