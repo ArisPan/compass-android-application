@@ -6,12 +6,12 @@ Its development is part of the March-April 2021 Software Development internship 
 
 ## Android Application Description
 The role of this application is to provide end users with an intuitive interface which allows them to log their routes.
-The app is receiving GPS coordinates at a given time interval which in turn are filtered using the Kalman Algorithm in order to improve accuracy.
+The app is receiving GPS coordinates at a given time interval. They are then passed to a FaaS implementation of the Kalman filter in order to improve accuracy.
 The user interface will provide an overview of the user current route with the help of Google Maps API.
 
 ## Setup
-In order to preview and develop the application, Android Studio will be used.
-To load the project, start by cloning the repository in your local machine. Open Android Studio then go to Files -> Open, navigate to the project direcotry and hit OK.<br>
+In order to preview and develop the application, we 'll be using Android Studio.
+To load the project, start by going to `File -> New -> Project from Version Control`. The *Get from Version Control* window pops up. Make sure to log in to your GitHub account from the *GitHub* tab. Then, in the *Repository URL* tab, select Git for Version control. Paste the repository URL and specify the directory in which the project will reside. Finally hit *Clone*.<br>
 *Note that Android Studio projects, usually reside in* `C:/Users/username/AndroidStudioProjects/`.<br>
 
 In order to get the google API to work you have to include the key in your *local.properties* file.
