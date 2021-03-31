@@ -40,20 +40,23 @@ interface MeasurementDAO {
     suspend fun insertAll(measurements: List<Measurement>)
 
     /*
-     * Loads all Measurement tuples ordered by measurement id in ascending order.
      * Flow is used to observe data changes. Useful for displaying updated data in the UI.
+     * When Room queries return Flow, the queries are automatically run asynchronously
+     * on a background thread. Thus, keyword 'suspend' can be omitted.
      */
+    // Loads all Measurement tuples ordered by measurement id in ascending order.
     @Query("SELECT * FROM Measurement ORDER BY id ASC")
-    suspend fun loadAll(): Flow<Array<Measurement>>
+    fun loadAll(): Flow<List<Measurement>>
 
     /*
      * Loads all Measurement tuples that have not been sent through RabbitMQ.
      * They are ordered by measurement id in ascending order.
-     * @return - An Array of Measurements.
+     * @return - A List of Measurements.
      */
     @Query("SELECT * FROM Measurement WHERE hasBeenPublished == 0 ORDER BY id ASC")
-    suspend fun loadUnpublished(): Array<Measurement>
+    fun loadUnpublished(): Flow<List<Measurement>>
 
+    // Update given measurement's hasBeenPublished field with 'true'.
     @Query("UPDATE Measurement SET hasBeenPublished = 1 WHERE id == :id")
     suspend fun setPublished(id: Int)
 
