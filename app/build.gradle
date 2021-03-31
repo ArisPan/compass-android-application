@@ -16,6 +16,23 @@ android {
         versionName "1.0"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+
+        /*
+         * Room can export database's schema information into a JSON file at compile time.
+         * The exported JSON files represent database's schema history.
+         * Here, we specify the subfolder of our project's directory in which the schema will be exported.
+         */
+        kapt {
+            arguments {
+                arg("room.schemaLocation", "$projectDir/schemas")
+            }
+        }
+
+        // Add the location of the exported schema as an asset folder.
+        // Used for testing Room Database Migrations.
+        sourceSets {
+            androidTest.assets.srcDirs += files("$projectDir/schemas".toString())
+        }
     }
 
     buildTypes {
@@ -68,6 +85,7 @@ dependencies {
 
     // Testing
     testImplementation 'junit:junit:4.13.2'
+    testImplementation "androidx.room:room-testing:2.2.6"   // Used for testing Room Database Migrations.
     androidTestImplementation 'androidx.test.ext:junit:1.1.2'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.3.0'
 }
