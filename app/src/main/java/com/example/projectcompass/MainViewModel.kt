@@ -2,12 +2,51 @@ package com.example.projectcompass
 
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.asLiveData
+import androidx.lifecycle.viewModelScope
 import androidx.work.*
-import kotlin.coroutines.coroutineContext
+import kotlinx.coroutines.launch
 
-class MainViewModel(application: Application) : AndroidViewModel(application) {
+/*
+ * ViewModel can take care of holding and processing all the data needed for the UI
+ * while surviving configuration changes.
+ * A ViewModel acts as a communication center between the Repository and the UI.
+ */
+class MainViewModel(
+    private val repository: MeasurementRepository,
+    application: Application) : AndroidViewModel(application) {
+
+    /*
+     * LiveData is an observable, LifeCycle aware data holder.
+     * It automatically stops or resumes observation depending on
+     * the lifecycle of the component that listens for changes.
+     *
+     * Here, we transform the data from the Repository, from Flow to LiveData
+     * and expose the list of measurements as LiveData to the UI.
+     * This way, we ensure that every time the data changes in the database,
+     * our UI will automatically be updated.
+     * As a bonus, Repository is completely separated from the UI through the ViewModel.
+     * We follow the same procedure for unpublished measurements. We want to get notified every time
+     * a new unpublished measurement is available in order to post it through RabbitMQ (via WorkManager).
+     */
+    val allMeasurements: LiveData<List<Measurement>> = repository.allMeasurements.asLiveData()
+    val unpublishedMeasurements: LiveData<List<Measurement>> = repository.unpublishedMeasurements.asLiveData()
 
     private val workManager = WorkManager.getInstance(application)
+
+    /*
+     * Launching two new coroutines and calling repository's suspend functions
+     * insert and setPublished. This way, implementation is encapsulated from the UI.
+     * viewModelScope - The coroutine scope of ViewModel based on it's lifecycle.
+     */
+    fun insert(measurement: Measurement) = viewModelScope.launch {
+        repository.insert(measurement)
+    }
+
+    fun setPublished(measurementID: Int) = viewModelScope.launch {
+        repository.setPublished(measurementID)
+    }
 
     /*
      * Our use case demands that given a network connection, retrieved location data will be
@@ -36,3 +75,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         workManager.enqueue(locationPost)
     }
 }
+
+/* TODO
+ * Implement MainViewModelFactory.
+ * Check: https://developer.android.com/codelabs/android-room-with-a-view-kotlin#9
+ */
