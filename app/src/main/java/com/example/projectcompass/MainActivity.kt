@@ -1,19 +1,23 @@
 package com.example.projectcompass
 
 import android.os.Bundle
+import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
-import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory
+import androidx.lifecycle.Observer
 
 class MainActivity : AppCompatActivity() {
 
-    private lateinit var viewModel: MainViewModel
+    private val viewModel: MainViewModel by viewModels {
+        MainViewModelFactory(
+            (application as CompassApplication).repository,
+            (application as CompassApplication)
+        )
+    }
 
     /*
-     * Perform basic application startup logic that should happen
-     * only once for the entire life of the activity.
-     * @param savedInstanceState Bundle object containing the activity's previously saved state.
-     * If the activity has never existed before, the value of the Bundle object is null.
+     * @param
+     *  savedInstanceState - Bundle object containing the activity's previously saved state.
+     *  If the activity has never existed before, the value of the Bundle object is null.
      */
     override fun onCreate(savedInstanceState: Bundle?) {
 
@@ -22,9 +26,74 @@ class MainActivity : AppCompatActivity() {
         // Set the user interface layout for this activity.
         setContentView(R.layout.activity_main)
 
-        // Create MainViewModel
-        viewModel = ViewModelProvider(this, AndroidViewModelFactory(application)).get(MainViewModel::class.java)
-        // Compose and schedule a work request to publish location data to RabbitMQ Queue.
-        viewModel.postLocationData()
+        viewModel.allMeasurements.observe(this, Observer {
+            measurements -> measurements?.let {}
+        })
+
+        viewModel.unpublishedMeasurements.observe(this, Observer {
+            unpublishedMeasurements -> unpublishedMeasurements?.let {
+            // Compose and schedule a work request to publish location data to RabbitMQ Queue.
+            viewModel.postLocationData() }
+        })
+
+        createAndSaveLocationData()
+    }
+
+    // Debug DB
+    private fun createAndSaveLocationData() {
+
+        val measurement0 = Measurement(
+            0,
+            49.65536761889327,
+            10.850841940328824,
+            0.7f,
+            30f,
+            "1/4/21",
+            4000L,
+            0,
+            false
+        )
+
+        val measurement1 = Measurement(
+            1,
+            59.65536761889327,
+            60.850841940328824,
+            0.8f,
+            35f,
+            "1/4/21",
+            4500L,
+            0,
+            false
+        )
+
+        val measurement2 = Measurement(
+            2,
+            19.65536761889327,
+            90.850841940328824,
+            0.5f,
+            40f,
+            "1/4/21",
+            5000L,
+            0,
+            false
+        )
+
+        viewModel.insert(measurement0)
+        viewModel.insert(measurement1)
+        viewModel.insert(measurement2)
+    }
+
+    override fun onResume() {
+        super.onResume()
+
+        // Debug DB
+        println("In onResume() -> Measurements: ${viewModel.allMeasurements.value}")
+    }
+
+    override fun onStop() {
+        super.onStop()
+
+        println("Dropping DB.")
+        viewModel.deleteAll()
     }
 }
