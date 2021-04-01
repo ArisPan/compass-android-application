@@ -1,10 +1,7 @@
 package com.example.projectcompass
 
 import android.app.Application
-import androidx.lifecycle.AndroidViewModel
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.asLiveData
-import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.*
 import androidx.work.*
 import kotlinx.coroutines.launch
 
@@ -22,7 +19,7 @@ class MainViewModel(
      * It automatically stops or resumes observation depending on
      * the lifecycle of the component that listens for changes.
      *
-     * Here, we transform the data from the Repository, from Flow to LiveData
+     * Here, we transform Repository's data, from Flow to LiveData
      * and expose the list of measurements as LiveData to the UI.
      * This way, we ensure that every time the data changes in the database,
      * our UI will automatically be updated.
@@ -39,6 +36,10 @@ class MainViewModel(
      * Launching two new coroutines and calling repository's suspend functions
      * insert and setPublished. This way, implementation is encapsulated from the UI.
      * viewModelScope - The coroutine scope of ViewModel based on it's lifecycle.
+     * TODO
+     *      Since the following functions will be most likely used not by the UI
+     *      but the ViewModel itself, they could be easily replaced by just the
+     *      repository.function() method calls.
      */
     fun insert(measurement: Measurement) = viewModelScope.launch {
         repository.insert(measurement)
@@ -76,7 +77,20 @@ class MainViewModel(
     }
 }
 
-/* TODO
- * Implement MainViewModelFactory.
- * Check: https://developer.android.com/codelabs/android-room-with-a-view-kotlin#9
+/*
+ * Since MainViewModel has two dependencies, repository and application,
+ * we need a custom ViewModelFactory for us to be able to pass these
+ * dependencies as parameters to it's constructor. The default implementation
+ * accepts no parameters.
  */
+class MainViewModelFactory(private val repository: MeasurementRepository,
+                           private val application: Application) : ViewModelProvider.Factory {
+
+    override fun <T : ViewModel?> create(modelClass: Class<T>): T {
+        if (modelClass.isAssignableFrom(MainViewModel::class.java)) {
+            @Suppress("UNCHECKED_CAST")
+            return MainViewModel(repository, application) as T
+        }
+        throw IllegalArgumentException("Unknown ViewModel class")
+    }
+}
