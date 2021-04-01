@@ -1,5 +1,6 @@
 package com.example.projectcompass
 
+import androidx.annotation.WorkerThread
 import kotlinx.coroutines.flow.Flow
 
 /*
@@ -14,19 +15,17 @@ class MeasurementRepository(private val measurementDAO: MeasurementDAO) {
     val allMeasurements: Flow<List<Measurement>> = measurementDAO.loadAll()
     val unpublishedMeasurements: Flow<List<Measurement>> = measurementDAO.loadUnpublished()
 
-    /* TODO
-     * @Suppress("RedundantSuspendModifier")
-     * @WorkerThread
-     * Check: https://developer.android.com/codelabs/android-room-with-a-view-kotlin#8
-     */
+    @WorkerThread
     suspend fun insert(measurement: Measurement) {
         measurementDAO.insert(measurement)
     }
 
+    @WorkerThread
     suspend fun insertAll(measurements: List<Measurement>) {
         measurementDAO.insertAll(measurements)
     }
 
+    @WorkerThread
     suspend fun setPublished(measurementID: Int) {
         measurementDAO.setPublished(measurementID)
     }
