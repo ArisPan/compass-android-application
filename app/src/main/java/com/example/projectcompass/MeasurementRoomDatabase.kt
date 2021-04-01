@@ -17,7 +17,7 @@ import androidx.room.RoomDatabase
  *      the appropriate Migration.
  */
 @Database(entities = [Measurement::class], version = 1)
-public abstract class MeasurementRoomDatabase : RoomDatabase() {
+abstract class MeasurementRoomDatabase : RoomDatabase() {
 
     /*
      * For each DAO class that is associated with the database,
