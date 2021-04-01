@@ -54,8 +54,12 @@ android {
 }
 
 dependencies {
+    // Target the latest platform features and APIs while also supporting older devices.
     implementation 'androidx.core:core-ktx:1.3.2'
+    // Allows access to new APIs on older API versions of the platform.
     implementation 'androidx.appcompat:appcompat:1.2.0'
+    // Access composable APIs built on top of Activity.
+    implementation "androidx.activity:activity-ktx:1.2.2"
 
     // WorkManager
     def work_version = "2.5.0"
