@@ -1,6 +1,5 @@
 package com.example.projectcompass
 
-import android.app.Application
 import androidx.lifecycle.*
 import androidx.work.*
 import kotlinx.coroutines.launch
@@ -12,7 +11,7 @@ import kotlinx.coroutines.launch
  */
 class MainViewModel(
     private val repository: MeasurementRepository,
-    application: Application) : AndroidViewModel(application) {
+    application: CompassApplication) : AndroidViewModel(application) {
 
     /*
      * LiveData is an observable, LifeCycle aware data holder.
@@ -38,7 +37,7 @@ class MainViewModel(
      * viewModelScope - The coroutine scope of ViewModel based on it's lifecycle.
      * TODO
      *      Since the following functions will be most likely used not by the UI
-     *      but the ViewModel itself, they could be easily replaced by just the
+     *      but the ViewModel itself, they could be easily replaced just by the
      *      repository.function() method calls.
      */
     fun insert(measurement: Measurement) = viewModelScope.launch {
@@ -47,6 +46,10 @@ class MainViewModel(
 
     fun setPublished(measurementID: Int) = viewModelScope.launch {
         repository.setPublished(measurementID)
+    }
+
+    fun deleteAll() = viewModelScope.launch {
+        repository.deleteAll()
     }
 
     /*
@@ -80,11 +83,11 @@ class MainViewModel(
 /*
  * Since MainViewModel has two dependencies, repository and application,
  * we need a custom ViewModelFactory for us to be able to pass these
- * dependencies as parameters to it's constructor. The default implementation
- * accepts no parameters.
+ * dependencies as parameters to it's constructor.
+ * The default implementation accepts no parameters.
  */
 class MainViewModelFactory(private val repository: MeasurementRepository,
-                           private val application: Application) : ViewModelProvider.Factory {
+                           private val application: CompassApplication) : ViewModelProvider.Factory {
 
     override fun <T : ViewModel?> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(MainViewModel::class.java)) {
