@@ -29,4 +29,9 @@ class MeasurementRepository(private val measurementDAO: MeasurementDAO) {
     suspend fun setPublished(measurementID: Int) {
         measurementDAO.setPublished(measurementID)
     }
+
+    @WorkerThread
+    suspend fun deleteAll() {
+        measurementDAO.deleteAll()
+    }
 }
