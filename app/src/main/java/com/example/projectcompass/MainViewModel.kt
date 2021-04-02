@@ -50,25 +50,29 @@ class MainViewModel(
      * WorkManager is used to schedule this transaction, separating it's execution from the main thread.
      * postLocationData() is responsible for composing and scheduling the work request.
      */
-    internal fun postLocationData() {
+    internal fun postLocationData(unpublishedMeasurements: List<Measurement>) {
+
+        println("postLocationData() -> Thread ID: ${Thread.currentThread().id}")
 
         // Create Network constraint.
         val constraints = Constraints.Builder()
                 .setRequiredNetworkType(NetworkType.CONNECTED)
                 .build()
 
-        // Build Data object to pass to Worker Class.
-        val coordinates: Data = workDataOf("latitude" to 49.65536761889327,
-                                                "longitude" to 10.850841940328824)
+        for (measurement in unpublishedMeasurements) {
 
-        // Add WorkRequest to publish location data to RabbitMQ Queue.
-        val locationPost: WorkRequest = OneTimeWorkRequestBuilder<LocationPostWorker>()
-            .setInputData(coordinates)
-            .setConstraints(constraints)
-            .build()
+            println("Preparing message for measurement ${measurement.id}")
+            val measurementID: Data = workDataOf("id" to measurement.id)
 
-        // Actually start the work.
-        workManager.enqueue(locationPost)
+            // Add WorkRequest to publish location data to RabbitMQ Queue.
+            val locationPost: WorkRequest = OneTimeWorkRequestBuilder<LocationPostWorker>()
+                    .setInputData(measurementID)
+                    .setConstraints(constraints)
+                    .build()
+
+            // Actually start the work.
+            workManager.enqueue(locationPost)
+        }
     }
 }
 
