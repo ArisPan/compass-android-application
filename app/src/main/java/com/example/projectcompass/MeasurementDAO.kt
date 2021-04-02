@@ -39,6 +39,9 @@ interface MeasurementDAO {
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertAll(measurements: List<Measurement>)
 
+    @Query("SELECT * FROM Measurement WHERE id == :id")
+    fun load(id: Int): Measurement
+
     /*
      * Flow is used to observe data changes. Useful for displaying updated data in the UI.
      * When Room queries return Flow, the queries are automatically run asynchronously
