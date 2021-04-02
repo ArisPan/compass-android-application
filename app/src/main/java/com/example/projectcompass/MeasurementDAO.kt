@@ -56,9 +56,13 @@ interface MeasurementDAO {
     @Query("SELECT * FROM Measurement WHERE hasBeenPublished == 0 ORDER BY id ASC")
     fun loadUnpublished(): Flow<List<Measurement>>
 
-    // Update given measurement's hasBeenPublished field with 'true'.
+    /*
+     * Update given measurement's hasBeenPublished field with 'true'.
+     * Not a suspend function since setPublished() will always be called
+     * from a background/worker thread via WorkManager.
+     */
     @Query("UPDATE Measurement SET hasBeenPublished = 1 WHERE id == :id")
-    suspend fun setPublished(id: Int)
+    fun setPublished(id: Int)
 
     @Query("DELETE FROM Measurement")
     suspend fun deleteAll()
