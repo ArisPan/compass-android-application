@@ -3,6 +3,7 @@ package com.example.projectcompass
 import android.content.Context
 import androidx.work.WorkerParameters
 import androidx.work.Worker
+import com.google.gson.Gson
 
 /*
  * Work is defined using the Worker class.
@@ -10,31 +11,32 @@ import androidx.work.Worker
  */
 class LocationPostWorker(context: Context, parameters: WorkerParameters) : Worker(context, parameters) {
 
+    val database = MeasurementRoomDatabase.getDatabase(applicationContext)
+
     /*
      * @return The Result returned from doWork() informs the WorkManager service
      * whether the work succeeded.
      */
     override fun doWork() : Result {
 
-        val latitude = inputData.getDouble("latitude", 0.0)
-        val longitude = inputData.getDouble("longitude", 0.0)
+        val measurementID = inputData.getInt("id", 0)
 
         return try {
-            val message = """{"latitude": $latitude, "longitude": $longitude}"""
+            println("Worker -> Thread ID: ${Thread.currentThread().id}")
 
-            /* TODO
-             * In the following snippet, we publish the message containing the location data to an exchange.
-             * By default, the fanout exchange is used, broadcasting all messages to all consumers.
-             * As a next step, we will change this to a direct exchange in order for each message to be published
-             * to the queues whose binding key exactly matches the routing key of the message.
-             * This way, we will have a clear separation between the location data sent by different users.
-             */
+            // Parse the contents of measurement object to JSON format.
+            val jsonMessage = Gson().toJson(database.measurementDAO().load(measurementID))
+
+            // Publish the message to a fanout exchange. Broadcasts to all consumers.
             RabbitMQClient.channel.basicPublish(
                 "",
                 QUEUE_NAME,
                 null,
-                message.toByteArray(charset("UTF-8")))
-            println("Sent message: $message")
+                jsonMessage.toByteArray(charset("UTF-8"))
+            )
+            println("Sent message: $jsonMessage")
+            database.measurementDAO().setPublished(measurementID)  // Declare measurement as published.
+
             Result.success()
         } catch (throwable: Throwable) {
             Result.failure()
