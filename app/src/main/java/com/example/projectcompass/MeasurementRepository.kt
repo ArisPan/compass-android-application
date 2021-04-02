@@ -26,7 +26,7 @@ class MeasurementRepository(private val measurementDAO: MeasurementDAO) {
     }
 
     @WorkerThread
-    suspend fun setPublished(measurementID: Int) {
+    fun setPublished(measurementID: Int) {
         measurementDAO.setPublished(measurementID)
     }
 
