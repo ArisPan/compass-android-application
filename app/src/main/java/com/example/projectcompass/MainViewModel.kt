@@ -33,19 +33,11 @@ class MainViewModel(
 
     /*
      * Launching two new coroutines and calling repository's suspend functions
-     * insert and setPublished. This way, implementation is encapsulated from the UI.
+     * insert() and deleteAll(). This way, implementation is encapsulated from the UI.
      * viewModelScope - The coroutine scope of ViewModel based on it's lifecycle.
-     * TODO
-     *      Since the following functions will be most likely used not by the UI
-     *      but the ViewModel itself, they could be easily replaced just by the
-     *      repository.function() method calls.
      */
     fun insert(measurement: Measurement) = viewModelScope.launch {
         repository.insert(measurement)
-    }
-
-    fun setPublished(measurementID: Int) = viewModelScope.launch {
-        repository.setPublished(measurementID)
     }
 
     fun deleteAll() = viewModelScope.launch {
