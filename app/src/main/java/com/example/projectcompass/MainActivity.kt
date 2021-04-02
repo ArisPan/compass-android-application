@@ -26,6 +26,14 @@ class MainActivity : AppCompatActivity() {
         // Set the user interface layout for this activity.
         setContentView(R.layout.activity_main)
 
+        // A more appropriate place for deleteAll() is in a callback.
+        // Keep the call here for testing purposes.
+        println("Dropping DB.")
+        viewModel.deleteAll()
+
+        // Debug Thread Blocking
+        println("MainActivity -> Thread ID: ${Thread.currentThread().id}")
+
         viewModel.allMeasurements.observe(this, Observer {
             measurements -> measurements?.let {}
         })
@@ -33,7 +41,8 @@ class MainActivity : AppCompatActivity() {
         viewModel.unpublishedMeasurements.observe(this, Observer {
             unpublishedMeasurements -> unpublishedMeasurements?.let {
             // Compose and schedule a work request to publish location data to RabbitMQ Queue.
-            viewModel.postLocationData() }
+            println("In unpublishedMeasurements.observe -> Measurements: ${it.toString()}")
+            viewModel.postLocationData(viewModel.unpublishedMeasurements.value!!) }
         })
 
         createAndSaveLocationData()
@@ -55,7 +64,7 @@ class MainActivity : AppCompatActivity() {
         )
 
         val measurement1 = Measurement(
-            1,
+            0,
             59.65536761889327,
             60.850841940328824,
             0.8f,
@@ -67,7 +76,7 @@ class MainActivity : AppCompatActivity() {
         )
 
         val measurement2 = Measurement(
-            2,
+            0,
             19.65536761889327,
             90.850841940328824,
             0.5f,
@@ -85,15 +94,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-
         // Debug DB
         println("In onResume() -> Measurements: ${viewModel.allMeasurements.value}")
-    }
-
-    override fun onStop() {
-        super.onStop()
-
-        println("Dropping DB.")
-        viewModel.deleteAll()
     }
 }
