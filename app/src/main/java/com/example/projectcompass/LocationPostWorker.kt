@@ -39,7 +39,7 @@ class LocationPostWorker(context: Context, parameters: WorkerParameters) : Worke
 
             Result.success()
         } catch (throwable: Throwable) {
-            Result.failure()
+            Result.retry()
         }
     }
 }
