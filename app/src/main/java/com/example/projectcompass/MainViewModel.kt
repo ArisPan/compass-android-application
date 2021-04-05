@@ -3,6 +3,7 @@ package com.example.projectcompass
 import androidx.lifecycle.*
 import androidx.work.*
 import kotlinx.coroutines.launch
+import java.util.concurrent.TimeUnit
 
 /*
  * ViewModel can take care of holding and processing all the data needed for the UI
@@ -68,6 +69,10 @@ class MainViewModel(
             val locationPost: WorkRequest = OneTimeWorkRequestBuilder<LocationPostWorker>()
                     .setInputData(measurementID)
                     .setConstraints(constraints)
+                    .setBackoffCriteria(
+                            BackoffPolicy.LINEAR,
+                            OneTimeWorkRequest.DEFAULT_BACKOFF_DELAY_MILLIS,
+                            TimeUnit.MILLISECONDS)
                     .build()
 
             // Actually start the work.
