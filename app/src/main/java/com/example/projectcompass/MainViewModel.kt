@@ -53,8 +53,6 @@ class MainViewModel(
      */
     internal fun postLocationData(unpublishedMeasurements: List<Measurement>) {
 
-        println("postLocationData() -> Thread ID: ${Thread.currentThread().id}")
-
         // Create Network constraint.
         val constraints = Constraints.Builder()
                 .setRequiredNetworkType(NetworkType.CONNECTED)
