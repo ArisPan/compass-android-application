@@ -4,6 +4,10 @@ plugins {
     id 'kotlin-kapt'    // Kotlin Annotation Processing Tool
 }
 
+Properties properties = new Properties()
+properties.load(project.rootProject.file('local.properties').newDataInputStream())
+def MAPS_API_KEY = properties.getProperty('google.map.key')
+
 android {
     compileSdkVersion 30
     buildToolsVersion "30.0.3"
