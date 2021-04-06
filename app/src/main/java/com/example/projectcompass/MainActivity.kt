@@ -1,18 +1,22 @@
 package com.example.projectcompass
 
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.Observer
+
 
 class MainActivity : AppCompatActivity() {
 
     private val viewModel: MainViewModel by viewModels {
         MainViewModelFactory(
-            (application as CompassApplication).repository,
-            (application as CompassApplication)
+                (application as CompassApplication).repository,
+                (application as CompassApplication)
         )
     }
+    private var currentUnpublishedMeasurementsListSize: Int = 0
 
     /*
      * @param
@@ -26,70 +30,61 @@ class MainActivity : AppCompatActivity() {
         // Set the user interface layout for this activity.
         setContentView(R.layout.activity_main)
 
-        // A more appropriate place for deleteAll() is in a callback.
-        // Keep the call here for testing purposes.
-        println("Dropping DB.")
+        // A more appropriate place for deleteAll() is in a callback. Keep it here for testing.
         viewModel.deleteAll()
 
-        // Debug Thread Blocking
-        println("MainActivity -> Thread ID: ${Thread.currentThread().id}")
-
-        viewModel.allMeasurements.observe(this, Observer {
-            measurements -> measurements?.let {}
+        viewModel.allMeasurements.observe(this, Observer { measurements ->
+            measurements?.let {}
         })
 
-        viewModel.unpublishedMeasurements.observe(this, Observer {
-            unpublishedMeasurements -> unpublishedMeasurements?.let {
-            // Compose and schedule a work request to publish location data to RabbitMQ Queue.
-            println("In unpublishedMeasurements.observe -> Measurements: ${it.toString()}")
-            viewModel.postLocationData(viewModel.unpublishedMeasurements.value!!) }
+        viewModel.unpublishedMeasurements.observe(this, Observer { unpublishedMeasurements ->
+            unpublishedMeasurements?.let {
+
+                var newUnpublishedMeasurements: List<Measurement> = emptyList()
+
+                if (currentUnpublishedMeasurementsListSize <= it.size)
+                    newUnpublishedMeasurements = it.subList(currentUnpublishedMeasurementsListSize, (it.size))
+
+                currentUnpublishedMeasurementsListSize = it.size
+
+                if (newUnpublishedMeasurements.isNotEmpty())
+                    viewModel.postLocationData(newUnpublishedMeasurements)
+            }
         })
 
-        createAndSaveLocationData()
+        for (index in 0..1000) {
+            Handler(Looper.getMainLooper()).postDelayed({
+                createAndSaveLocationData(index)
+            }, 2000)
+        }
     }
 
-    // Debug DB
-    private fun createAndSaveLocationData() {
+    // Simulate live location data updates.
+    private fun createAndSaveLocationData(index: Int) {
 
-        val measurement0 = Measurement(
-            0,
-            49.65536761889327,
-            10.850841940328824,
-            0.7f,
-            30f,
-            "1/4/21",
-            4000L,
-            0,
-            false
+        val id: Int = 0
+        val latitude: Double = 10.65536761889327
+        val longitude: Double = 10.850841940328824
+        val speed: Float = 0.1f
+        val accuracy: Float = 10f
+        val date: String = "5/4/2021"
+        val time: Long = 1000L
+        val userID: Int = 0
+        val hasBeenPublished: Boolean = false
+
+        val measurement = Measurement(
+                id,
+                latitude + index.toDouble(),
+                longitude + index.toDouble(),
+                speed + index.toFloat(),
+                accuracy + index.toFloat(),
+                date,
+                time + index.toLong(),
+                userID,
+                hasBeenPublished
         )
 
-        val measurement1 = Measurement(
-            0,
-            59.65536761889327,
-            60.850841940328824,
-            0.8f,
-            35f,
-            "1/4/21",
-            4500L,
-            0,
-            false
-        )
-
-        val measurement2 = Measurement(
-            0,
-            19.65536761889327,
-            90.850841940328824,
-            0.5f,
-            40f,
-            "1/4/21",
-            5000L,
-            0,
-            false
-        )
-
-        viewModel.insert(measurement0)
-        viewModel.insert(measurement1)
-        viewModel.insert(measurement2)
+        viewModel.insert(measurement)
     }
 
     override fun onResume() {
