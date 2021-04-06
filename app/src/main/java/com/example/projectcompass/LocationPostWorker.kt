@@ -22,8 +22,6 @@ class LocationPostWorker(context: Context, parameters: WorkerParameters) : Worke
         val measurementID = inputData.getInt("id", 0)
 
         return try {
-            println("Worker -> Thread ID: ${Thread.currentThread().id}")
-
             // Parse the contents of measurement object to JSON format.
             val jsonMessage = Gson().toJson(database.measurementDAO().load(measurementID))
 
