@@ -11,4 +11,6 @@ const val PORT = 5672
 const val USERNAME = "guest"
 const val PASSWORD = "guest"
 
-const val LOCATION_POST_WORK_NAME = "Post location data to RabbitMQ queue"
+/* Location Tracking constants */
+const val LOCATION_PERMISSION_REQUEST_CODE = 1
+const val REQUEST_CHECK_SETTINGS = 2
