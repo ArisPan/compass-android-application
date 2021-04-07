@@ -4,15 +4,37 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:layout_centerVertical="true"
+    android:fitsSystemWindows="true"
     tools:context=".MainActivity">
 
-    <TextView
+    <fragment
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:id="@+id/map"
+        tools:context=".MainActivity"
+        android:name="com.google.android.gms.maps.SupportMapFragment" />
+
+    <Button
+        android:id="@+id/button_tracking"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Hello World!"
+        android:layout_gravity="bottom|start|center"
+        android:layout_marginStart="10dp"
+        android:layout_marginBottom="10dp"
+        android:text="Start"
+        app:backgroundTint="#00EE00"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintRight_toRightOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintStart_toStartOf="parent" />
+
+    <Button
+        android:id="@+id/button_mapClear"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="10dp"
+        android:layout_marginBottom="10dp"
+        android:text="Clear"
+        app:layout_constraintBottom_toBottomOf="@+id/map"
+        app:layout_constraintStart_toEndOf="@+id/button_tracking" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
