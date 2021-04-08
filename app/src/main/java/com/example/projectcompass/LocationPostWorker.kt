@@ -4,6 +4,8 @@ import android.content.Context
 import androidx.work.WorkerParameters
 import androidx.work.Worker
 import com.google.gson.Gson
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.SupervisorJob
 
 /*
  * Work is defined using the Worker class.
@@ -11,7 +13,8 @@ import com.google.gson.Gson
  */
 class LocationPostWorker(context: Context, parameters: WorkerParameters) : Worker(context, parameters) {
 
-    val database = MeasurementRoomDatabase.getDatabase(applicationContext)
+    private val scope = CoroutineScope(SupervisorJob())
+    val database = MeasurementRoomDatabase.getDatabase(applicationContext, scope)
 
     /*
      * @return The Result returned from doWork() informs the WorkManager service
