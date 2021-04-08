@@ -4,6 +4,10 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import androidx.sqlite.db.SupportSQLiteDatabase
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 /*
  * MeasurementRoomDatabase defines the database configuration
@@ -38,17 +42,37 @@ abstract class MeasurementRoomDatabase : RoomDatabase() {
         @Volatile
         private var INSTANCE: MeasurementRoomDatabase? = null
 
-        fun getDatabase(context: Context) : MeasurementRoomDatabase {
+        fun getDatabase(context: Context, scope: CoroutineScope) : MeasurementRoomDatabase {
             // If INSTANCE is null, create the Database. Else, return it.
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
                     context.applicationContext,
                     MeasurementRoomDatabase::class.java,
                     "MeasurementDatabase"
-                ).build()
+                )
+                        .addCallback(RoomDatabaseCallback(scope))
+                        .build()
                 INSTANCE = instance
                 instance
             }
+        }
+
+        private class RoomDatabaseCallback(
+                private val scope: CoroutineScope) : RoomDatabase.Callback() {
+
+            override fun onOpen(db: SupportSQLiteDatabase) {
+                super.onCreate(db)
+                INSTANCE?.let { database ->
+                    scope.launch(Dispatchers.IO) {
+                        dropDB(database.measurementDAO())
+                    }
+                }
+            }
+        }
+
+        suspend fun dropDB(measurementDAO: MeasurementDAO) {
+            println("In DatabaseCallback -> Drop DB.")
+            measurementDAO.deleteAll()
         }
     }
 }
