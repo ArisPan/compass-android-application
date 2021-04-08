@@ -1,5 +1,6 @@
 package com.example.projectcompass
 
+import android.Manifest
 import android.content.IntentSender
 import android.content.pm.PackageManager
 import android.graphics.Color
@@ -37,6 +38,9 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
     private var tracking = false
     private var markerCount = 0
 
+    private lateinit var trackingButton: Button
+    private lateinit var clearMapButton: Button
+
     private val viewModel: MainViewModel by viewModels {
         MainViewModelFactory(
                 (application as CompassApplication).repository,
@@ -64,13 +68,13 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
 
         // Create an instance of the Fused Location Provider Client
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
-        initializeLocationCallback()
 
-        val trackingButton = findViewById<Button>(R.id.button_tracking)
+        trackingButton = findViewById(R.id.button_tracking)
         trackingButton.setOnClickListener {
             // On click, reverse the value of tracking signaling the change in state.
             tracking = !tracking
             if (tracking) {
+                initializeLocationCallback()
                 createLocationRequest()
                 trackingButton.text = getString(R.string.stop_button)
                 trackingButton.setBackgroundColor(Color.RED)
@@ -78,17 +82,15 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
             else {
                 // Stop location updates.
                 fusedLocationClient.removeLocationUpdates(locationCallback)
+                requestingLocationUpdates = false
                 trackingButton.text = getString(R.string.start_button)
                 trackingButton.setBackgroundColor(Color.GREEN)
             }
         }
-        val clearMapButton = findViewById<Button>(R.id.button_mapClear)
+        clearMapButton = findViewById(R.id.button_mapClear)
         clearMapButton.setOnClickListener {
             map.clear()
         }
-
-        // A more appropriate place for deleteAll() is in a callback. Keep it here for testing.
-        viewModel.deleteAll()
 
         viewModel.allMeasurements.observe(this, Observer { measurements ->
             measurements?.let {}
@@ -110,6 +112,28 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         })
     }
 
+    override fun onSaveInstanceState(outState: Bundle) {
+        outState.putBoolean(REQUESTING_LOCATION_UPDATES_KEY, requestingLocationUpdates)
+        outState.putBoolean(TRACKING_KEY, tracking)
+        super.onSaveInstanceState(outState)
+    }
+
+    override fun onRestoreInstanceState(savedInstanceState: Bundle) {
+        super.onRestoreInstanceState(savedInstanceState)
+
+        if (savedInstanceState.keySet().contains(REQUESTING_LOCATION_UPDATES_KEY)) {
+            requestingLocationUpdates = savedInstanceState.getBoolean(
+                    REQUESTING_LOCATION_UPDATES_KEY)
+            tracking = savedInstanceState.getBoolean(
+                    TRACKING_KEY)
+        }
+
+        if(requestingLocationUpdates && tracking)
+            trackingButton.text = getString(R.string.stop_button)
+            trackingButton.setBackgroundColor(Color.RED)
+            createLocationRequest()
+    }
+
     override fun onMarkerClick(p0: Marker?) = false
 
     /*
@@ -123,26 +147,52 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
     override fun onMapReady(googleMap: GoogleMap) {
         map = googleMap
         map.uiSettings.isZoomControlsEnabled = true
+        map.mapType = GoogleMap.MAP_TYPE_NORMAL
         map.setOnMarkerClickListener(this)
         setUpMap()
     }
 
     private fun setUpMap() {
+        /*
+         * allMeasurements is null when no location data has been obtained.
+         * This is our first location reading.
+         * If allMeasurements is not null but setUpMap() is called, we are dealing with Activity's
+         * reconstruction after it has been destroyed by change in orientation (or something else).
+         * In this case, repaint already obtained measurements with markers on recreated map.
+         */
+        if (viewModel.allMeasurements.value == null)
+            getLastKnownLocation()
+        else
+            repaintMarkers()
+    }
+
+    /*
+     * The last known location of the device provides a handy base from which to start,
+     * ensuring that the app has a known location before starting the periodic location updates.
+     */
+    private fun getLastKnownLocation() {
+
         if (!checkPermission())
             return
 
         map.isMyLocationEnabled = true
-        map.mapType = GoogleMap.MAP_TYPE_NORMAL
 
         fusedLocationClient.lastLocation.addOnSuccessListener(this) { location ->
             // Got last known location. In some rare situations this can be null.
             if (location != null) {
                 currentLocation = location
-                println("setupMap() -> Latitude: ${currentLocation.latitude}\nLongitude: ${currentLocation.longitude}")
                 val currentLatLng = LatLng(location.latitude, location.longitude)
+
                 placeMarkerOnMap(currentLatLng)
-                map.animateCamera(CameraUpdateFactory.newLatLngZoom(currentLatLng, 15f))
+                map.animateCamera(CameraUpdateFactory.newLatLngZoom(currentLatLng, 21f))
             }
+        }
+    }
+
+    private fun repaintMarkers() {
+
+        for (measurement in viewModel.allMeasurements.value!!) {
+            placeMarkerOnMap(LatLng(measurement.latitude, measurement.longitude))
         }
     }
 
@@ -226,11 +276,11 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
 
         if (ActivityCompat.checkSelfPermission(
                         this,
-                        android.Manifest.permission.ACCESS_FINE_LOCATION
+                        Manifest.permission.ACCESS_FINE_LOCATION
                 ) != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(
                     this,
-                    arrayOf(android.Manifest.permission.ACCESS_FINE_LOCATION),
+                    arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),
                     LOCATION_PERMISSION_REQUEST_CODE
             )
             return false
@@ -240,6 +290,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
 
     // Should go in observer.
     private fun placeMarkerOnMap(location: LatLng) {
+
         if(tracking){
             val markerOptions = MarkerOptions().position(location)
             if (markerCount < 3) {
@@ -283,7 +334,30 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
 
     override fun onResume() {
         super.onResume()
+
+        /*
+         * Case: Activity is destroyed but location updates continue.
+         * For example, a change in device's orientation may destroy the current activity.
+         * We want the location updates to continue from where they were left off.
+         * Upon Activity's reconstruction, a new instance of locationCallback is created
+         * but is not initialized (locationCallback is initialized upon pressing the Start button
+         * when the user chooses to start the route). In order to keep the updates coming,
+         * we need to initialize the new locationCallback instance.
+         */
+        if (!this::locationCallback.isInitialized)
+            initializeLocationCallback()
         if (requestingLocationUpdates)
             startLocationUpdates()
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+
+        /*
+         * Upon Activity's reconstruction, a new instance of fusedLocationClient is created
+         * and is held responsible for new location updates. Thus, we have to remove updates from
+         * current listener.
+         */
+        fusedLocationClient.removeLocationUpdates(locationCallback)
     }
 }
