@@ -33,16 +33,12 @@ class MainViewModel(
     private val workManager = WorkManager.getInstance(application)
 
     /*
-     * Launching two new coroutines and calling repository's suspend functions
-     * insert() and deleteAll(). This way, implementation is encapsulated from the UI.
+     * Launching a new coroutine and calling repository's insert() suspend function.
+     * This way, implementation is encapsulated from the UI.
      * viewModelScope - The coroutine scope of ViewModel based on it's lifecycle.
      */
     fun insert(measurement: Measurement) = viewModelScope.launch {
         repository.insert(measurement)
-    }
-
-    fun deleteAll() = viewModelScope.launch {
-        repository.deleteAll()
     }
 
     /*
