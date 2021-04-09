@@ -10,7 +10,6 @@ import android.location.Location
 import android.os.Bundle
 import android.os.Looper
 import android.util.Log
-import android.view.View
 import android.widget.Button
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
@@ -37,7 +36,6 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
     private lateinit var locationRequest: LocationRequest
     private var requestingLocationUpdates = false
     private var tracking = false
-    private var markerCount = 0
 
     private lateinit var trackingButton: Button
     private lateinit var clearMapButton: Button
@@ -138,10 +136,14 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
                     TRACKING_KEY)
         }
 
-        if(requestingLocationUpdates && tracking)
+        if(requestingLocationUpdates && tracking) {
             trackingButton.text = getString(R.string.stop_button)
             trackingButton.setBackgroundColor(Color.RED)
             createLocationRequest()
+        }
+        else {
+            trackingButton.setBackgroundColor(Color.GREEN)
+        }
     }
 
     override fun onMarkerClick(p0: Marker?) = false
@@ -190,7 +192,12 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         fusedLocationClient.lastLocation.addOnSuccessListener(this) { location ->
             // Got last known location. In some rare situations this can be null.
             if (location != null) {
-                writeMeasurementToDB(location)
+//                writeMeasurementToDB(location)
+                /* TODO:
+                 * Although last known location is useful for providing a base,
+                 * we don't want to actually start saving the location until the user
+                 * has started a route. The above statement should be missing.
+                 */
 
                 val currentLatLng = LatLng(location.latitude, location.longitude)
                 map.animateCamera(CameraUpdateFactory.newLatLngZoom(currentLatLng, 21f))
@@ -203,6 +210,8 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         for (measurement in viewModel.allMeasurements.value!!) {
             placeMarkerOnMap(measurement)
         }
+
+        println("----------Repainted ${viewModel.allMeasurements.value!!.size} markers.----------")
     }
 
     private fun initializeLocationCallback() {
