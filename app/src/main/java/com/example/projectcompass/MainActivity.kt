@@ -10,6 +10,7 @@ import android.location.Location
 import android.os.Bundle
 import android.os.Looper
 import android.util.Log
+import android.view.View
 import android.widget.Button
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
@@ -93,7 +94,16 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         }
 
         viewModel.allMeasurements.observe(this, Observer { measurements ->
-            measurements?.let {}
+            measurements?.let {
+
+                if (it.isNotEmpty() && tracking) {
+
+                    val measurement = it[it.lastIndex]
+                    println("--------------------New Measurement--------------------")
+                    println("Placing marker on map for measurement: $measurement")
+                    placeMarkerOnMap(measurement)
+                }
+            }
         })
 
         viewModel.unpublishedMeasurements.observe(this, Observer { unpublishedMeasurements ->
@@ -180,10 +190,9 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         fusedLocationClient.lastLocation.addOnSuccessListener(this) { location ->
             // Got last known location. In some rare situations this can be null.
             if (location != null) {
-                currentLocation = location
-                val currentLatLng = LatLng(location.latitude, location.longitude)
+                writeMeasurementToDB(location)
 
-                placeMarkerOnMap(currentLatLng)
+                val currentLatLng = LatLng(location.latitude, location.longitude)
                 map.animateCamera(CameraUpdateFactory.newLatLngZoom(currentLatLng, 21f))
             }
         }
@@ -192,7 +201,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
     private fun repaintMarkers() {
 
         for (measurement in viewModel.allMeasurements.value!!) {
-            placeMarkerOnMap(LatLng(measurement.latitude, measurement.longitude))
+            placeMarkerOnMap(measurement)
         }
     }
 
@@ -204,20 +213,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
                 super.onLocationResult(locationResult)
                 currentLocation = locationResult.lastLocation
 
-                val measurement = Measurement(
-                        0,
-                        currentLocation.latitude,
-                        currentLocation.longitude,
-                        0.1f,
-                        30f,
-                        "PLACEHOLDER",
-                        1000L,
-                        0,
-                        false
-                )
-                viewModel.insert(measurement)
-                println("Current Location -> Latitude: ${currentLocation.latitude} Longitude: ${currentLocation.longitude}")
-                placeMarkerOnMap(LatLng(currentLocation.latitude, currentLocation.longitude))
+                writeMeasurementToDB(currentLocation)
             }
         }
     }
@@ -272,6 +268,22 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         )
     }
 
+    private fun writeMeasurementToDB(location: Location) {
+
+        val measurement = Measurement(
+                0,
+                location.latitude,
+                location.longitude,
+                0.1f,
+                30f,
+                "PLACEHOLDER",
+                1000L,
+                0,
+                false
+        )
+        viewModel.insert(measurement)
+    }
+
     private fun checkPermission(): Boolean {
 
         if (ActivityCompat.checkSelfPermission(
@@ -288,24 +300,15 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         return true
     }
 
-    // Should go in observer.
-    private fun placeMarkerOnMap(location: LatLng) {
+    private fun placeMarkerOnMap(measurement: Measurement) {
 
-        if(tracking){
-            val markerOptions = MarkerOptions().position(location)
-            if (markerCount < 3) {
-                markerOptions.icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_CYAN))
-                markerOptions.position(location)
-            }
-            else {
-                markerOptions.icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_ORANGE))
-            }
-            markerCount += 1
-            val titleStr = getAddress(location)
-            markerOptions.title(titleStr)
+        val coordinates = LatLng(measurement.latitude, measurement.longitude)
+        val markerOptions = MarkerOptions()
+        markerOptions.icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_CYAN))
+        markerOptions.position(coordinates)
+        markerOptions.title(getAddress(coordinates))
 
-            map.addMarker(markerOptions)
-        }
+        map.addMarker(markerOptions)
     }
 
     private fun getAddress(latLng: LatLng): String {
