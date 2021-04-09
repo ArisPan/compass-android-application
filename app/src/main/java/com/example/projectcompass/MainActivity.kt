@@ -192,13 +192,6 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         fusedLocationClient.lastLocation.addOnSuccessListener(this) { location ->
             // Got last known location. In some rare situations this can be null.
             if (location != null) {
-//                writeMeasurementToDB(location)
-                /* TODO:
-                 * Although last known location is useful for providing a base,
-                 * we don't want to actually start saving the location until the user
-                 * has started a route. The above statement should be missing.
-                 */
-
                 val currentLatLng = LatLng(location.latitude, location.longitude)
                 map.animateCamera(CameraUpdateFactory.newLatLngZoom(currentLatLng, 21f))
             }
