@@ -21,10 +21,7 @@ import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
-import com.google.android.gms.maps.model.BitmapDescriptorFactory
-import com.google.android.gms.maps.model.LatLng
-import com.google.android.gms.maps.model.Marker
-import com.google.android.gms.maps.model.MarkerOptions
+import com.google.android.gms.maps.model.*
 import java.io.IOException
 
 class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener {
@@ -97,9 +94,27 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
                 if (it.isNotEmpty() && tracking) {
 
                     val measurement = it[it.lastIndex]
-                    println("--------------------New Measurement--------------------")
-                    println("Placing marker on map for measurement: $measurement")
-                    placeMarkerOnMap(measurement)
+                    /*
+                     * LiveData observer is notified with every change in allMeasurements.
+                     * That means that whether a new measurement has been obtained
+                     * or a field value has been modified, the code in this let{} block will be executed.
+                     * We want to notify the UI when a new measurement arrives but not when it's
+                     * 'hasBeenPublished' field is updated. That's the use of the following if statement.
+                     * We choose to update the UI with measurement.hasBeenPublished == false
+                     * because that's it's state when the measurement is obtained.
+                     * 'hasBeenPublished' becomes true when the measurement is sent to the backend
+                     * which requires an internet connection. That's irrelevant to the UI.
+                     */
+                    if (!measurement.hasBeenPublished) {
+                        println("--------------------New Measurement--------------------")
+                        println("Placing marker on map for measurement: $measurement")
+                        placeMarkerOnMap(measurement)
+
+                        if (it.size > 1) {
+                            println("--------------------Drawing Polyline--------------------")
+                            addPolyline(it)
+                        }
+                    }
                 }
             }
         })
@@ -207,19 +222,6 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         println("----------Repainted ${viewModel.allMeasurements.value!!.size} markers.----------")
     }
 
-    private fun initializeLocationCallback() {
-
-        locationCallback = object : LocationCallback() {
-            override fun onLocationResult(locationResult: LocationResult) {
-
-                super.onLocationResult(locationResult)
-                currentLocation = locationResult.lastLocation
-
-                writeMeasurementToDB(currentLocation)
-            }
-        }
-    }
-
     private fun createLocationRequest() {
 
         locationRequest = LocationRequest.create().apply {
@@ -270,6 +272,20 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         )
     }
 
+    private fun initializeLocationCallback() {
+
+        locationCallback = object : LocationCallback() {
+            override fun onLocationResult(locationResult: LocationResult) {
+
+                super.onLocationResult(locationResult)
+                currentLocation = locationResult.lastLocation
+
+                // TODO: Get Date, Time, Speed, Accuracy.
+                writeMeasurementToDB(currentLocation)
+            }
+        }
+    }
+
     private fun writeMeasurementToDB(location: Location) {
 
         val measurement = Measurement(
@@ -300,6 +316,21 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
             return false
         }
         return true
+    }
+
+    private fun addPolyline(measurements: List<Measurement>) {
+
+        val list = mutableListOf<LatLng>()
+        for (measurement in measurements) {
+            list.add(LatLng(measurement.latitude, measurement.longitude))
+        }
+        val polylineOptions = PolylineOptions()
+        polylineOptions.addAll(list)
+        polylineOptions
+                .width(10f)
+                .color(Color.RED)
+
+        map.addPolyline(polylineOptions)
     }
 
     private fun placeMarkerOnMap(measurement: Measurement) {
