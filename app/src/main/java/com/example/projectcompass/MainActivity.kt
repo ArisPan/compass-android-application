@@ -23,6 +23,8 @@ import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.*
 import java.io.IOException
+import java.text.SimpleDateFormat
+import java.util.*
 
 class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener {
 
@@ -218,7 +220,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         for (measurement in viewModel.allMeasurements.value!!) {
             placeMarkerOnMap(measurement)
         }
-
+        // TODO: Repaint Polyline.
         println("----------Repainted ${viewModel.allMeasurements.value!!.size} markers.----------")
     }
 
@@ -280,7 +282,6 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
                 super.onLocationResult(locationResult)
                 currentLocation = locationResult.lastLocation
 
-                // TODO: Get Date, Time, Speed, Accuracy.
                 writeMeasurementToDB(currentLocation)
             }
         }
@@ -288,18 +289,41 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
 
     private fun writeMeasurementToDB(location: Location) {
 
+        val date = SimpleDateFormat("dd-MM-yyyy", Locale.getDefault()).format(Date())
         val measurement = Measurement(
                 0,
                 location.latitude,
                 location.longitude,
-                0.1f,
-                30f,
-                "PLACEHOLDER",
-                1000L,
+                getSpeed(location),
+                location.accuracy,
+                date,
+                location.time,
                 0,
                 false
         )
         viewModel.insert(measurement)
+    }
+
+    private fun getSpeed(currentLocation: Location): Float {
+
+        if (currentLocation.hasSpeed() && currentLocation.speed != 0.0f)
+            return currentLocation.speed
+
+        val numberOfMeasurements = viewModel.allMeasurements.value!!.size
+        if (numberOfMeasurements > 0) {
+
+            val previousMeasurement = viewModel.allMeasurements.value!![numberOfMeasurements - 1]
+            val previousLocation = Location("")
+            previousLocation.latitude = previousMeasurement.latitude
+            previousLocation.longitude = previousMeasurement.longitude
+            previousLocation.time = previousMeasurement.time
+
+            val distanceInMeters = previousLocation.distanceTo(currentLocation)
+            val elapsedTimeInSeconds = (currentLocation.time - previousLocation.time) / 1000
+
+            return distanceInMeters / elapsedTimeInSeconds
+        }
+        return currentLocation.speed
     }
 
     private fun checkPermission(): Boolean {
