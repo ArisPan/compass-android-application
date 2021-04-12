@@ -108,14 +108,9 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
                      * which requires an internet connection. That's irrelevant to the UI.
                      */
                     if (!measurement.hasBeenPublished) {
-                        println("--------------------New Measurement--------------------")
-                        println("Placing marker on map for measurement: $measurement")
                         placeMarkerOnMap(measurement)
-
-                        if (it.size > 1) {
-                            println("--------------------Drawing Polyline--------------------")
+                        if (it.size > 1)
                             addPolyline(it)
-                        }
                     }
                 }
             }
@@ -192,7 +187,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         if (viewModel.allMeasurements.value == null)
             getLastKnownLocation()
         else
-            repaintMarkers()
+            repaintMap()
     }
 
     /*
@@ -215,13 +210,15 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         }
     }
 
-    private fun repaintMarkers() {
+    private fun repaintMap() {
+
+        if (checkPermission())
+            map.isMyLocationEnabled = true
 
         for (measurement in viewModel.allMeasurements.value!!) {
             placeMarkerOnMap(measurement)
         }
-        // TODO: Repaint Polyline.
-        println("----------Repainted ${viewModel.allMeasurements.value!!.size} markers.----------")
+        addPolyline(viewModel.allMeasurements.value!!)
     }
 
     private fun createLocationRequest() {
