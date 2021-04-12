@@ -46,6 +46,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         )
     }
     private var currentUnpublishedMeasurementsListSize: Int = 0
+    private var allMeasurementsIndexOnClear: Int = 0
 
     /*
      * @param
@@ -87,6 +88,12 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         }
         clearMapButton = findViewById(R.id.button_mapClear)
         clearMapButton.setOnClickListener {
+            /*
+             * Remember at which measurement the user cleared the map.
+             * This way, in case of Activity's destruction, we can only repaint
+             * the measurements obtained from that point on.
+             */
+            allMeasurementsIndexOnClear = viewModel.allMeasurements.value!!.size
             map.clear()
         }
 
@@ -109,8 +116,13 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
                      */
                     if (!measurement.hasBeenPublished) {
                         placeMarkerOnMap(measurement)
-                        if (it.size > 1)
-                            addPolyline(it)
+                        if (it.size > 1) {
+                            /*
+                             * If the clear button has been pressed, only draw a line from that point on.
+                             * If not, allMeasurementsIndexOnClear is 0, thus the sublist is the whole list.
+                             */
+                            addPolyline(it.subList(allMeasurementsIndexOnClear, (it.size)))
+                        }
                     }
                 }
             }
@@ -135,6 +147,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
     override fun onSaveInstanceState(outState: Bundle) {
         outState.putBoolean(REQUESTING_LOCATION_UPDATES_KEY, requestingLocationUpdates)
         outState.putBoolean(TRACKING_KEY, tracking)
+        outState.putInt(INDEX_ON_CLEAR, allMeasurementsIndexOnClear)
         super.onSaveInstanceState(outState)
     }
 
@@ -146,6 +159,9 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
                     REQUESTING_LOCATION_UPDATES_KEY)
             tracking = savedInstanceState.getBoolean(
                     TRACKING_KEY)
+            allMeasurementsIndexOnClear = savedInstanceState.getInt(
+                    INDEX_ON_CLEAR
+            )
         }
 
         if(requestingLocationUpdates && tracking) {
@@ -215,10 +231,14 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         if (checkPermission())
             map.isMyLocationEnabled = true
 
-        for (measurement in viewModel.allMeasurements.value!!) {
+        val measurements = viewModel.allMeasurements.value!!.subList(
+                allMeasurementsIndexOnClear,
+                viewModel.allMeasurements.value!!.size)
+
+        for (measurement in measurements) {
             placeMarkerOnMap(measurement)
         }
-        addPolyline(viewModel.allMeasurements.value!!)
+        addPolyline(measurements)
     }
 
     private fun createLocationRequest() {
