@@ -22,8 +22,8 @@
         android:layout_gravity="bottom|start|center"
         android:layout_marginStart="10dp"
         android:layout_marginBottom="10dp"
-        android:text="Start"
-        app:backgroundTint="#00EE00"
+        android:text="@string/start_button"
+        app:backgroundTint="@color/start_green"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent" />
 
@@ -33,7 +33,7 @@
         android:layout_height="wrap_content"
         android:layout_marginStart="10dp"
         android:layout_marginBottom="10dp"
-        android:text="Clear"
+        android:text="@string/clear"
         app:layout_constraintBottom_toBottomOf="@+id/map"
         app:layout_constraintStart_toEndOf="@+id/button_tracking" />
 
