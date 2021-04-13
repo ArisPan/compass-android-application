@@ -3,7 +3,6 @@ package com.example.projectcompass
 import android.Manifest
 import android.content.IntentSender
 import android.content.pm.PackageManager
-import android.graphics.Color
 import android.location.Address
 import android.location.Geocoder
 import android.location.Location
@@ -76,14 +75,15 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
                 initializeLocationCallback()
                 createLocationRequest()
                 trackingButton.text = getString(R.string.stop_button)
-                trackingButton.setBackgroundColor(Color.RED)
+                trackingButton.setBackgroundColor(resources.getColor(R.color.stop_red, this.theme))
             }
             else {
                 // Stop location updates.
                 fusedLocationClient.removeLocationUpdates(locationCallback)
                 requestingLocationUpdates = false
                 trackingButton.text = getString(R.string.start_button)
-                trackingButton.setBackgroundColor(Color.GREEN)
+                trackingButton.setBackgroundColor(resources.getColor(R.color.start_green, this.theme))
+                placeMarkerOnMap(viewModel.allMeasurements.value!!.last())
             }
         }
         clearMapButton = findViewById(R.id.button_mapClear)
@@ -102,6 +102,9 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
 
                 if (it.isNotEmpty() && tracking) {
 
+                    if (it.size == allMeasurementsIndexOnClear + 1)
+                        placeMarkerOnMap(viewModel.allMeasurements.value!![allMeasurementsIndexOnClear])
+
                     val measurement = it[it.lastIndex]
                     /*
                      * LiveData observer is notified with every change in allMeasurements.
@@ -115,7 +118,6 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
                      * which requires an internet connection. That's irrelevant to the UI.
                      */
                     if (!measurement.hasBeenPublished) {
-                        placeMarkerOnMap(measurement)
                         if (it.size > 1) {
                             /*
                              * If the clear button has been pressed, only draw a line from that point on.
@@ -166,11 +168,11 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
 
         if(requestingLocationUpdates && tracking) {
             trackingButton.text = getString(R.string.stop_button)
-            trackingButton.setBackgroundColor(Color.RED)
+            trackingButton.setBackgroundColor(resources.getColor(R.color.stop_red, this.theme))
             createLocationRequest()
         }
         else {
-            trackingButton.setBackgroundColor(Color.GREEN)
+            trackingButton.setBackgroundColor(resources.getColor(R.color.start_green, this.theme))
         }
     }
 
@@ -221,7 +223,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
             // Got last known location. In some rare situations this can be null.
             if (location != null) {
                 val currentLatLng = LatLng(location.latitude, location.longitude)
-                map.animateCamera(CameraUpdateFactory.newLatLngZoom(currentLatLng, 21f))
+                map.animateCamera(CameraUpdateFactory.newLatLngZoom(currentLatLng, 20f))
             }
         }
     }
@@ -235,9 +237,8 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
                 allMeasurementsIndexOnClear,
                 viewModel.allMeasurements.value!!.size)
 
-        for (measurement in measurements) {
-            placeMarkerOnMap(measurement)
-        }
+        placeMarkerOnMap(measurements.first())
+        placeMarkerOnMap(measurements.last())
         addPolyline(measurements)
     }
 
@@ -338,7 +339,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
             val distanceInMeters = previousLocation.distanceTo(currentLocation)
             val elapsedTimeInSeconds = (currentLocation.time - previousLocation.time) / 1000
 
-            return distanceInMeters / elapsedTimeInSeconds
+            return (distanceInMeters / elapsedTimeInSeconds)
         }
         return currentLocation.speed
     }
@@ -369,7 +370,9 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         polylineOptions.addAll(list)
         polylineOptions
                 .width(10f)
-                .color(Color.RED)
+                .color(resources.getColor(R.color.polyline_salmon, this.theme))
+                .startCap(RoundCap())
+                .endCap(RoundCap())
 
         map.addPolyline(polylineOptions)
     }
