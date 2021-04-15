@@ -237,16 +237,21 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
                 allMeasurementsIndexOnClear,
                 viewModel.allMeasurements.value!!.size)
 
-        placeMarkerOnMap(measurements.first())
-        placeMarkerOnMap(measurements.last())
-        addPolyline(measurements)
+        if (measurements.isNotEmpty()) {
+
+            placeMarkerOnMap(measurements.first())
+            if (!tracking)
+                placeMarkerOnMap(measurements.last())
+
+            addPolyline(measurements)
+        }
     }
 
     private fun createLocationRequest() {
 
         locationRequest = LocationRequest.create().apply {
-            interval = 12000
-            fastestInterval = 7000
+            interval = LOCATION_REQUEST_INTERVAL.toLong()
+            fastestInterval = LOCATION_REQUEST_FASTEST_INTERVAL.toLong()
             priority = LocationRequest.PRIORITY_HIGH_ACCURACY
         }
 
