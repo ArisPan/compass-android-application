@@ -6,7 +6,7 @@ package com.example.projectcompass
 const val QUEUE_NAME = "Location Data"
 const val DURABLE = true
 // Factory Constants
-const val HOST = "192.168.1.5"
+const val HOST = "192.168.1.4"
 const val PORT = 5672
 const val USERNAME = "guest"
 const val PASSWORD = "guest"
